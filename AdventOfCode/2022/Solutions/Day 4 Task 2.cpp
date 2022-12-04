@@ -3,7 +3,7 @@
 #include <string>
 
 bool ReadLine(std::ifstream* input, int values[4]);
-bool HasContainedSet(const int ranges[4]);
+bool HasOverlap(const int ranges[4]);
 
 int main()
 {
@@ -32,11 +32,11 @@ int main()
 	{
 		int ranges[4];
 		if(ReadLine(&input, ranges))
-			if (HasContainedSet(ranges))
+			if (HasOverlap(ranges))
 				count++;
 	}
 
-	std::cout << "Number of pairs where one set is fully contained:" << count << std::endl;
+	std::cout << "Number of pairs with overlapping sets:" << count << std::endl;
 	exit(0);
 }
 
@@ -64,24 +64,24 @@ bool ReadLine(std::ifstream* input, int values[4])
 	return true;
 }
 
-//Returns true if either set is fully contained within the other
-bool HasContainedSet(const int ranges[4])
+//Returns true if there is any overlap at all between the sets
+bool HasOverlap(const int ranges[4])
 {
-	//If either the 2 upper limits or the 2 lower limits are the same, the larger set will always fully contain the smaller set
-	if (ranges[0] == ranges[2] || ranges[1] == ranges[3])
+	//Whenever an overlap occurs, at least one set will contain at least one endpoint from the other
+	//Therefore, check each endpoint against the opposite range
+
+	if (ranges[0] >= ranges[2] && ranges[0] <= ranges[3])
 		return true;
 
-	if (ranges[0] < ranges[2])
-	{
-		if (ranges[1] > ranges[3])	//Set 1 starts before and ends after set 2, therefore set 1 contains set 2
-			return true;
-	}
-	else
-	{
-		if (ranges[3] > ranges[1])	//Set 2 starts before and ends after set 1, therefore set 2 contains set 1
-			return true;
-	}
+	if (ranges[1] >= ranges[2] && ranges[1] <= ranges[3])
+		return true;
 
-	//None of the above criteria were met, therefore neither set fully contains the other
+	if (ranges[2] >= ranges[0] && ranges[2] <= ranges[1])
+		return true;
+
+	if (ranges[3] >= ranges[0] && ranges[3] <= ranges[1])
+		return true;
+
+	//No end point was contained in the other set, so no overlaps
 	return false;
 }

@@ -3,6 +3,7 @@
 #include <string>
 #include <set>
 #include <algorithm>
+#include <stack>
 
 struct Coords
 {
@@ -131,13 +132,23 @@ int FillCave(std::set<Coords> *blocks, const int floor)
 {
 	int particles = 0;
 	const Coords startPoint(500, 0);
+
+	//As the only thing that changes from one particle simulation to the next is the point where the sand stops
+	//We can trace the path of the sand and start a particle on the last point the previous particle occupied before its resting place
+	std::stack<Coords> sandPath;
+	sandPath.push(startPoint);
+
 	while (particles < INT_MAX)
 	{
 		particles++;
-		Coords sand = startPoint;
+		Coords sand = sandPath.top();
+		sandPath.pop();
 
 		while (sand.y < floor - 1)
 		{
+			//Remember each place the sand passes through
+			sandPath.push(sand);
+
 			//Try and move sand straight down
 			Coords checkPoint = sand + Coords(0, 1);
 			if (blocks->find(checkPoint) == blocks->end())
@@ -166,7 +177,10 @@ int FillCave(std::set<Coords> *blocks, const int floor)
 			break;
 		}
 
+		//Add the resting lpace to the blocks set, and remove it from the path
 		blocks->insert(sand);
+		sandPath.pop();
+
 		//Check if we reached the abyss
 		if (sand == startPoint)
 			return particles;

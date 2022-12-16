@@ -20,30 +20,6 @@ struct CoordsCompare
 Coords GetImpossibleRange(const Coords sensor, const Coords beacon, const int target);
 int CountImpossibleSpaces(std::list<Coords> ranges);
 
-//class Sensor
-//{
-//	Sensor();
-//
-//	Coords position;
-//	Coords beaconPos;
-//	int distance = 0;
-//
-//public:
-//	void SetPosition(Coords inPos) { position = inPos; }
-//	void SetBeacon(Coords inBeacon) { beaconPos = inBeacon; }
-//	bool CalculateDistance()
-//	{
-//		if (position.first != NULL && position.second != NULL && beaconPos.first != NULL && beaconPos.second != NULL)
-//		{
-//			int x = abs(beaconPos.first - position.first);
-//			int y = abs(beaconPos.second - position.second);
-//			distance = x + y;
-//			return true;
-//		}
-//		return false;
-//	}
-//};
-
 int main()
 {
 	//Create an input stream and open the file
@@ -68,6 +44,7 @@ int main()
 
 	std::list<Coords> ranges;
 	std::set<Coords, CoordsCompare> beaconsAtTarget;
+	std::set<Coords> orderedRanges;
 	//const int targetRow = 10;
 	const int targetRow = 2000000;
 	while (!input.eof())
@@ -86,32 +63,45 @@ int main()
 		input >> beaconPos.first;
 		input.ignore(256, '=');
 		input >> beaconPos.second;
+		input.ignore(256, '\n');
 
-		ranges.push_back(GetImpossibleRange(sensorPos, beaconPos, targetRow));
+		Coords temp;
+		temp = GetImpossibleRange(sensorPos, beaconPos, targetRow);
+
+		if(temp == Coords(INT_MAX, INT_MIN))
+			continue;
+
+		ranges.push_back(temp);
+		orderedRanges.insert(temp);
 
 		//Track all unique beacons on the target row, as these must be removed from the total of impossible spaces
 		if (beaconPos.second == targetRow)
 			beaconsAtTarget.insert(beaconPos);
-
-		input.ignore(256, '\n');
 	}
 
-	std::cout << "Number of spaces where a beacon is impossible: " << (CountImpossibleSpaces(ranges) - beaconsAtTarget.size()) << std::endl;
+	int spaces = CountImpossibleSpaces(ranges);
+	std::cout << "Number of spaces where a beacon is impossible: " << spaces - (int)beaconsAtTarget.size() << std::endl;
 	exit(0);
 }
 
 Coords GetImpossibleRange(const Coords sensor, const Coords beacon, const int target)
 {
-	int distToBeacon = 0;
-	distToBeacon += abs(beacon.first - sensor.first);
-	distToBeacon += abs(beacon.second - sensor.second);
-
-	int distToTarget = abs(target - sensor.second);
-	int offSet = abs(distToBeacon - distToTarget);
-
 	Coords result;
-	result.first = sensor.first - offSet;
-	result.second = sensor.first + offSet;
+	int xToBeacon = abs(beacon.first - sensor.first);
+	int yToBeacon = abs(beacon.second - sensor.second);
+
+	int distToBeacon = xToBeacon + yToBeacon;
+	int distToRow = abs(target - sensor.second);
+
+	if (distToBeacon < distToRow)
+		return Coords(INT_MAX, INT_MIN);
+
+	int offset = abs(distToBeacon - distToRow);
+	result.first = sensor.first - offset;
+	result.second = sensor.first + offset;
+
+	if (result.first < -638849 || result.second > 4401794)
+		std::cout << "ERROR" << std::endl;
 
 	return result;
 }
@@ -119,62 +109,60 @@ Coords GetImpossibleRange(const Coords sensor, const Coords beacon, const int ta
 int CountImpossibleSpaces(std::list<Coords> ranges)
 {
 	int result = 0;
+	std::list<Coords> superRanges;
+	bool foundOverlap = true;
 
-	while (!ranges.empty())
+	while (foundOverlap == true)
 	{
-		Coords current = ranges.front();
-		ranges.pop_front();
-		std::list<Coords> redundant;
-
-		for (Coords other : ranges)
+		foundOverlap = false;
+		while (!ranges.empty())
 		{
-			if (current == other)
-			{
-				current.first = INT_MAX;
-				current.second = INT_MIN;
-				break;
-			}
+			Coords current = ranges.front();
+			ranges.pop_front();
+			std::list<Coords> redundant;
 
-			if (current.first >= other.first)
+			for (Coords other : ranges)
 			{
-				if (current.first <= other.second)	//Current first is inside other, we have overlap
+				//If the other is fully enclosed in current, mark it as redundant
+				if (other.first >= current.first && other.first <= current.second && other.second >= current.first && other.second <= current.second)
 				{
-					if (current.second <= other.second)	//Current is completely inside other, current is all overlap and should be ignored completely
-					{
-						current.first = INT_MAX;
-						current.second = INT_MIN;
-						break;
-					}
-					else	//Only current first is inside other, adjust current to remove overlap
-					{
-						current.first = other.second + 1;
-					}
+					redundant.push_back(other);
+					foundOverlap = true;
+					continue;
+				}
+
+				//If the current first is inside the other range, expand current to enclose other and mark other as redundant
+				if (current.first >= other.first && current.first <= other.second)
+				{
+					current.first = other.first;
+					foundOverlap = true;
+					redundant.push_back(other);
+				}
+
+				//As above, but for the current second
+				if (current.second <= other.second && current.second >= other.first)
+				{
+					current.second = other.second;
+					foundOverlap = true;
+					redundant.push_back(other);
 				}
 			}
-			else if (current.second <= other.second && current.second >= other.first)	//Current second is inside other, we have overlap. Adjust current to remove it
+
+			//Remove any redundant ranges from the list
+			while (!redundant.empty())
 			{
-				current.second = other.first - 1;
+				ranges.remove(redundant.front());
+				redundant.pop_front();
 			}
-			else if (other.first > current.first && other.first < current.second && other.second > current.first && other.second < current.second)
-			{
-				//Other is completely inside current. It should be removed from the list as it is redundant
-				//Can't remove now as that would break the logic for the current loop, so mark for deletion afterwards
-				//It doesn't matter if current is resized after marking other for redundancy, as it will still be covered by other ranges in that case
-				redundant.push_back(other);
-			}
+
+			superRanges.push_back(current);
 		}
+		ranges = superRanges;
+		superRanges.clear();
+	}
 
-		//Remove any redundant ranges from the list
-		while (!redundant.empty())
-		{
-			ranges.remove(redundant.front());
-			redundant.pop_front();
-		}
-
-		//Check we have a valid range
-		if (current.first > current.second)
-			continue;
-
+	for (Coords current : ranges)
+	{
 		int score = abs(current.second - current.first) + 1;
 		result += score;
 	}

@@ -1,6 +1,6 @@
 ﻿namespace AoC_CS
 {
-    class Y2015_D5T1
+    class Y2015_D5T2
     {
         public void Solve()
         {
@@ -15,14 +15,14 @@
             
             string[] input = System.IO.File.ReadAllLines(filePath);
 
-            //Regex: 1st lookup matches any string with at least 3 vowels(aeiou). 2nd lookup matches for double letters (aa, bb etc.). 3rd lookup excludes any string including a banned phrase (@ab/cd/pq/xy)
-            System.Text.RegularExpressions.Regex neededElements = new System.Text.RegularExpressions.Regex(@"(?=.*[aeiou][^aeiou]*[aeiou][^aeiou]*[aeiou])(?=.*(.)\1)^(?!.*(ab|cd|pq|xy))");
+            //Regex: First lookup matches repeated pairs of letters (e.g. erfer). Second lookup matches repeated letters one space apart(e.g. aba or aaa)
+            System.Text.RegularExpressions.Regex rx = new System.Text.RegularExpressions.Regex(@"(?=.*(..).*\1)(?=.*(.).\2)");
 
-            //Count number of lines that match the regex
+            //Count the number of lines that match the regex
             int matches = 0;
             foreach (string line in input)
             {
-                    if (neededElements.IsMatch(line))
+                    if (rx.IsMatch(line))
                         matches++;
             }
             

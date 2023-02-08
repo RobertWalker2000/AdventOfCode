@@ -2,7 +2,7 @@
 
 namespace AoC_CS
 {
-    class D3T2
+    class Y2015_D3T2
     {
         public void Solve()
         {

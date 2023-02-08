@@ -1,6 +1,6 @@
 ﻿namespace AoC_CS
 {
-    class D0T0
+    class Y2015_D0T0
     {
         public void Solve()
         {

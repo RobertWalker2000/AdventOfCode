@@ -47,6 +47,7 @@
     <Compile Include="Solutions\2015\D1T2.cs" />
     <Compile Include="Solutions\2015\D2T2.cs" />
     <Compile Include="Solutions\2015\D3T2.cs" />
+    <Compile Include="Solutions\2015\D4T2.cs" />
     <Compile Include="Solutions\2015\Main.cs" />
     <Compile Include="Solutions\2015\D1T1.cs" />
     <Compile Include="Solutions\2015\D2T1.cs" />

@@ -1,6 +1,6 @@
 ﻿namespace AoC_CS
 {
-    class Y2015_D4T1
+    class Y2015_D4T2
     {
         public void Solve()
         {
@@ -16,13 +16,12 @@
                 //Convert the string to a bytestream for the hashing algorithm
                 hash = md5.ComputeHash(System.Text.Encoding.ASCII.GetBytes(input + i.ToString()));
 
-                if (hash[0] == 0 && hash[1] == 0 && hash[2] < 16)
+                if (hash[0] == 0 && hash[1] == 0 && hash[2] == 0)
                     break;
 
                 //If not 5 leading 0s, try again with the next number
                 i++;
             }
-
             System.Console.WriteLine("Lowest compatible number: " + i.ToString());
         }
     }

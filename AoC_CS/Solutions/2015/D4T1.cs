@@ -13,8 +13,8 @@
                 string hash = CreateHash(input + i.ToString());
 
                 //Check if the hash has 5 leading 0s. If so, exit with our answer
-                string sub = hash.Substring(0, 5);
-                if (sub == "00000")
+                string sub = hash.Substring(0, 6);
+                if (sub == "000000")
                     break;
 
                 //If not 5 leading 0s, try again with the next number

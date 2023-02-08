@@ -46,10 +46,13 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Solutions\2015\D1T2.cs" />
     <Compile Include="Solutions\2015\D2T2.cs" />
+    <Compile Include="Solutions\2015\D3T2.cs" />
     <Compile Include="Solutions\2015\Main.cs" />
     <Compile Include="Solutions\2015\D1T1.cs" />
     <Compile Include="Solutions\2015\D2T1.cs" />
+    <Compile Include="Solutions\2015\D3T1.cs" />
     <Compile Include="Solutions\2015\SolutionBase.cs" />
+    <Compile Include="Supporting Classes\Pair.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />

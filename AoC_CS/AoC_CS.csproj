@@ -51,6 +51,7 @@
     <Compile Include="Solutions\2015\D1T1.cs" />
     <Compile Include="Solutions\2015\D2T1.cs" />
     <Compile Include="Solutions\2015\D3T1.cs" />
+    <Compile Include="Solutions\2015\D4T1.cs" />
     <Compile Include="Solutions\2015\SolutionBase.cs" />
     <Compile Include="Supporting Classes\Pair.cs" />
   </ItemGroup>

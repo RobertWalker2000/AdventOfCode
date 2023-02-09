@@ -16,7 +16,8 @@ namespace AoC_CS
             
             string[] input = System.IO.File.ReadAllLines(filePath);
 
-            SortedSet<Pair<int, int>> lights = new SortedSet<Pair<int, int>>();
+            bool[,] lights = new bool[1000, 1000];
+
             char[] numbers = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9' };
 
             for (int i = 0; i < input.Length; i++)
@@ -54,13 +55,13 @@ namespace AoC_CS
                 switch (instruction)
                 {
                     case "turn on":
-                        lights = TurnOn(lights, startPoint, endPoint);
+                        TurnOn(lights, startPoint, endPoint);
                         break;
                     case "turn off":
-                        lights = TurnOff(lights, startPoint, endPoint);
+                        TurnOff(lights, startPoint, endPoint);
                         break;
                     case "toggle":
-                        lights = Toggle(lights, startPoint, endPoint);
+                        Toggle(lights, startPoint, endPoint);
                         break;
                     default:
                         System.Console.WriteLine("ERROR: Unexpected instruction");
@@ -68,47 +69,50 @@ namespace AoC_CS
                 }
             }
 
-            System.Console.WriteLine("Active Lights: " + lights.Count.ToString());
+            //Count the number of lights that are on
+            int lightsCount = 0;
+            for(int i = 0; i < 1000; i++)
+            {
+                for(int j = 0; j < 1000; j++)
+                {
+                    if (lights[i, j])
+                        lightsCount++;
+                }
+            }
+            System.Console.WriteLine("Active Lights: " + lightsCount.ToString());
         }
 
-        SortedSet<Pair<int, int>> TurnOn(SortedSet<Pair<int, int>> lights, Pair<int, int> start, Pair<int, int> end)
+        void TurnOn(bool[,] lights, Pair<int, int> start, Pair<int, int> end)
         {
             for(int i = start.X; i <= end.X; i++)
             {
                 for(int j = start.Y; j <= end.Y; j++)
                 {
-                    lights.Add(new Pair<int, int>(i, j));
+                    lights[i, j] = true;
                 }
             }
-            return lights;
         }
 
-        SortedSet<Pair<int, int>> TurnOff(SortedSet<Pair<int, int>> lights, Pair<int, int> start, Pair<int, int> end)
+        void TurnOff(bool[,] lights, Pair<int, int> start, Pair<int, int> end)
         {
             for (int i = start.X; i <= end.X; i++)
             {
                 for (int j = start.Y; j <= end.Y; j++)
                 {
-                    lights.Remove(new Pair<int, int>(i, j));
+                    lights[i, j] = false;
                 }
             }
-            return lights;
         }
 
-        SortedSet<Pair<int, int>> Toggle(SortedSet<Pair<int, int>> lights, Pair<int, int> start, Pair<int, int> end)
+        void Toggle(bool[,] lights, Pair<int, int> start, Pair<int, int> end)
         {
             for (int i = start.X; i <= end.X; i++)
             {
                 for (int j = start.Y; j <= end.Y; j++)
                 {
-                    Pair<int, int> light = new Pair<int, int>(i, j);
-
-                    //Try and add the light. If it already existed within the set, remove it instead
-                    if (!lights.Add(light))
-                        lights.Remove(light);
+                    lights[i, j] = !lights[i, j];
                 }
             }
-            return lights;
         }
     }
 }

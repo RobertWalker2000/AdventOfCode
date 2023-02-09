@@ -1,7 +1,13 @@
 ﻿namespace AoC_CS
 {
-    class Pair<T1, T2>
+    class Pair<T1, T2> : System.IComparable
     {
+        public Pair()
+        {
+            X = default(T1);
+            Y = default(T2);
+        }
+
         public Pair(T1 val1, T2 val2)
         {
             X = val1;
@@ -25,10 +31,27 @@
             return false;
         }
 
-
         public override int GetHashCode()
         {
             return X.GetHashCode() * Y.GetHashCode();
+        }
+
+        public int CompareTo(object obj)
+        {
+            if (obj == null)
+                return 1;
+
+            //Check that the other object is of the same type as this
+            Pair<T1, T2> other = obj as Pair<T1, T2>;
+            if (other == null)
+                throw new System.ArgumentException("Object was not of a matching Pair type");
+
+            //If X values are equal, compare Y values
+            if(this.X.Equals(other.X))
+                return System.Collections.Generic.Comparer<T2>.Default.Compare(this.Y, other.Y);
+
+
+            return System.Collections.Generic.Comparer<T1>.Default.Compare(this.X, other.X);
         }
     }
 }

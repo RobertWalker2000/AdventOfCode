@@ -25,7 +25,22 @@ namespace AoC_CS
             //Evaluate our necessary node
             int answer = nodes["a"].Evaluate(ref nodes);
 
-            System.Console.WriteLine("Signal to wire a: " + answer.ToString());
+            System.Console.WriteLine("First signal to wire a: " + answer.ToString());
+
+            //Reset all the nodes in the circuit so they can be re-evaluated
+            var keys = nodes.Keys;
+            foreach(string key in keys)
+                nodes[key].Reset();
+
+            //Construct a new node for the updated circuit and replace the existing node with it
+            CircuitNode b = new CircuitNode();
+            b.lhs = answer.ToString();
+            b.rhs = answer.ToString();
+            b.opType = CircuitNode.Operations.DIRECT;
+            nodes["b"] = b;
+
+            answer = nodes["a"].Evaluate(ref nodes);
+            System.Console.WriteLine("Second signal to wire a: " + answer.ToString());
         }
     }
 
@@ -84,6 +99,12 @@ namespace AoC_CS
 
             evaluated = true;
             return value;
+        }
+
+        public void Reset()
+        {
+            value = 0;
+            evaluated = false;
         }
     }
 

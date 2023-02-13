@@ -46,13 +46,18 @@ namespace AoC_CS
             }
 
             int shortDist = int.MaxValue;
+            int longDist = int.MinValue;
             foreach(string town in townMap.Keys)
             {
                 int dist = townMap[town].FindShortRoute(ref townMap);
                 shortDist = System.Math.Min(shortDist, dist);
+
+                dist = townMap[town].FindLongRoute(ref townMap);
+                longDist = System.Math.Max(longDist, dist);
             }
 
             System.Console.WriteLine("Shortest possible distance: " + shortDist.ToString());
+            System.Console.WriteLine("Longest possible distance: " + longDist.ToString());
         }
     }
 
@@ -89,6 +94,32 @@ namespace AoC_CS
             shouldCheck = true;
 
             if (bestDist == int.MaxValue)
+                return 0;   //If we didn't have any other nodes to check, we have no sub distance to travel
+            else
+                return bestDist;
+        }
+
+        public int FindLongRoute(ref Dictionary<string, Town> towns)
+        {
+            //Start by setting this town to not be checked, to prevent doubling back on ourself
+            shouldCheck = false;
+
+            int bestDist = int.MinValue;
+            //Loop through all possible options for our next move, finding the worst possible distance from the current node to the end
+            foreach (string town in towns.Keys)
+            {
+                if (towns[town].shouldCheck)
+                {
+                    int subDist = towns[town].FindLongRoute(ref towns);    //Find the longest distance when starting with the given node
+                    subDist += links[town]; //Add the distance from the current node to the given node for the sub distance
+                    bestDist = System.Math.Max(bestDist, subDist);  //Compare the current distance to the worst distance and keep the longest
+                }
+            }
+
+            //Before we return our route, set shouldCheck back to true so this node can be checked again in other routes
+            shouldCheck = true;
+
+            if (bestDist == int.MinValue)
                 return 0;   //If we didn't have any other nodes to check, we have no sub distance to travel
             else
                 return bestDist;

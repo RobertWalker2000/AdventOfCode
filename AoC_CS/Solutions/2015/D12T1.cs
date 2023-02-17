@@ -16,7 +16,6 @@
             string[] input = System.IO.File.ReadAllLines(filePath);
 
             //Use a RegEx to get all the positive and negative numbers in the sequence
-            //Default options seem to use multi-line, so this will automatically check the entire document, starting on line 0.
             var matches = System.Text.RegularExpressions.Regex.Matches(input[0], @"\d+|-\d+");
 
             int totalSum = 0;

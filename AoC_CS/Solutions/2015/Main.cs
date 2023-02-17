@@ -4,7 +4,7 @@
     {
         static void Main(string[] args)
         {
-            var solution = new Y2015_D12T1();
+            var solution = new Y2015_D12T2();
             solution.Solve();
         }
     }

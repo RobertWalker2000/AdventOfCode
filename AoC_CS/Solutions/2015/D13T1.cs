@@ -64,41 +64,44 @@ namespace AoC_CS
             //As this is a circular layout, we don't need to try each person at the start of the list
             //Any layouts produced by changing the starting element will have already been checked. The only difference would be everyone being shifted round 1 place, but the pairings would all be the same
             int maxHappiness = int.MinValue;
+            int maxWithMe = int.MinValue;
+
             while(order[0] == 0)
             {
-                //Calculate the total happiness of this layout
-                int happiness = 0;
-                int forwardHappiness = 0;
-                int backwardHappiness = 0;
-                //Calculate the happiness going forwards
+                //Calculate the total happiness of this layout by calculating the total happiness of each pair
+
+                //Calculate the pairing between the first and last entry as this wraps around the array
+                string p1 = ID[order[order.Length - 1]];
+                string p2 = ID[order[0]];
+                int pairHap = people[p1].GetHappiness(p2);
+                pairHap += people[p2].GetHappiness(p1);
+                int badPair = pairHap;
+                int layoutHap = pairHap;
+
+                //Calculate the happiness for each other pairing
                 for(int i = 0; i < order.Length - 1; i++)
                 {
-                    string subject = ID[order[i]];
-                    string partner = ID[order[i + 1]];
-                    int hap = people[subject].GetHappiness(partner);
-                    forwardHappiness += hap;
-                }
-                //Add the happiness form the last person seperately as they wrap around
-                forwardHappiness += people[ID[order[order.Length - 1]]].GetHappiness(ID[order[0]]);
+                    p1 = ID[order[i]];
+                    p2 = ID[order[i + 1]];
+                    pairHap = people[p1].GetHappiness(p2);
+                    pairHap += people[p2].GetHappiness(p1);
+                    layoutHap += pairHap;
 
-                //Now calculate the happiness going backwards to capture the other half of the pairings
-                //Start with the person at the start, as they wrap around
-                backwardHappiness += people[ID[order[0]]].GetHappiness(ID[order[order.Length - 1]]);
-                for (int i = order.Length - 1; i > 0; i--)
-                {
-                    string subject = ID[order[i]];
-                    string partner = ID[order[i - 1]];
-                    backwardHappiness += people[subject].GetHappiness(partner);
+                    //If this pairing has the worst happiness for this layout, save it
+                    badPair = System.Math.Min(badPair, pairHap);
                 }
 
-                //Check the current happiness against the best result and keep the highest value
-                happiness = forwardHappiness + backwardHappiness;
-                maxHappiness = System.Math.Max(maxHappiness, happiness);
+                //Track the overall best layout
+                maxHappiness = System.Math.Max(maxHappiness, layoutHap);
+
+                //Track the best layout which includes me, by removing the worst pair from the total happiness to simulate me being slotted between the two people
+                maxWithMe = System.Math.Max(maxWithMe, layoutHap - badPair);
 
                 NextOrder(order);
             }
-
-            System.Console.WriteLine("Max happiness: " + maxHappiness.ToString());
+            
+            System.Console.WriteLine("Best layout: " + maxHappiness.ToString());
+            System.Console.WriteLine("Best layout with me: " + maxWithMe.ToString());
         }
 
         //Finds the next order possible when incrementing the given element in the array

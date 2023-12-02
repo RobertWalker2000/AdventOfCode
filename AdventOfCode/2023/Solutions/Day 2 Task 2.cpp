@@ -1,9 +1,10 @@
 #include <iostream>
 #include <fstream>
 #include <string>
+#include <algorithm>
 
 int CheckGame(std::string game);
-bool CheckColour(int num, char colour);
+void CheckColour(int num, char colour, int dice[3]);
 
 int main()
 {
@@ -41,13 +42,12 @@ int CheckGame(std::string game)
 	if (game.empty())
 		return 0;
 
-	//Strip the substring "Game " from the start of the string to get to the ID
+	//Strip the start of the spring to reach the first dice
 	game.erase(0, 5);
-	
-	//Get the game ID from the start of the line then strip it out to reach the next number
-	int gameID = std::stoi(game);
 	game.erase(0, game.find(' ') + 1);
 	
+	//Tracks the necessary number of dice (max values found) [r, g, b]
+	int diceNeeded[3] = { 0, 0, 0 };
 	//Loop through the line, finding each number/colour pairing and checking their validity
 	while (!game.empty())
 	{
@@ -56,8 +56,7 @@ int CheckGame(std::string game)
 		game.erase(0, game.find(' ') + 1);
 
 		//Check the validity of the cube selection using the number and colour code
-		if (!CheckColour(num, game[0]))
-			return 0;	//If the colour is invalid, do not add this ID to the result
+		CheckColour(num, game[0], diceNeeded);
 
 		//If there are no spaces left, we have checked the last set of cubes
 		int space = game.find(' ');
@@ -69,24 +68,21 @@ int CheckGame(std::string game)
 	}
 
 	//If we reached here, we have checked every handful of dice and they were all valid, therefore we count this game's ID
-	return gameID;
+	return diceNeeded[0] * diceNeeded[1] * diceNeeded[2];
 }
 
-bool CheckColour(int num, char colour)
+void CheckColour(int num, char colour, int dice[3])
 {
-	const int red = 12;
-	const int green = 13;
-	const int blue = 14;
+	int die = -1;
 
 	if (colour == 'r')
-		return num <= red;
+		die = 0;
 
 	if (colour == 'g')
-		return num <= green;
+		die = 1;
 
 	if (colour == 'b')
-		return num <= blue;
+		die = 2;
 
-	std::cout << "ERROR: Unexpected colour code given to CheckColour. Code: " << colour << std::endl;
-	abort();
+	dice[die] = std::max(dice[die], num);
 }

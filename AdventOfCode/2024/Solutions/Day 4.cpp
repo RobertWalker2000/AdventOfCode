@@ -6,7 +6,9 @@
 enum Direction : int {Up = 0, Down, Left, Right, UpLeft, UpRight, DownLeft, DownRight};
 
 int CountXMAS(std::vector<std::string>* grid);
-bool CheckFromPoint(std::vector<std::string>* grid, int x, int y, Direction dir);
+int CountCrossMAS(std::vector<std::string>* grid);
+bool CheckXMASFromPoint(std::vector<std::string>* grid, int x, int y, Direction dir);
+bool CheckCrossFromPoint(std::vector<std::string>* grid, int x, int y);
 
 int main()
 {
@@ -56,9 +58,14 @@ int main()
 	grid.insert(grid.begin(), bufferLine);
 	grid.push_back(bufferLine);
 
-	int result = CountXMAS(&grid);
+	//Count up the occurences of "XMAS", then count occurences of CorssMAS
+	//Both methods are destructive, but counting XMAS does not alter the data required to count CrossMAS
+	//Methods could easily be made non-destructive by passing copies of the grid rather than a reference, but this would increase memory usage and is not required for the given tasks
+	int xmas = CountXMAS(&grid);
+	int crossMas = CountCrossMAS(&grid);
 
-	std::cout << "XMAS found: " << result << std::endl;
+	std::cout << "XMAS found: " << xmas << std::endl;
+	std::cout << "CorssMAS found: " << crossMas << std::endl;
 	exit(0);
 }
 
@@ -82,7 +89,7 @@ int CountXMAS(std::vector<std::string>* grid)
 			for (int i = 0; i < 8; i++)
 			{
 				Direction dir = static_cast<Direction>(i);
-				if (CheckFromPoint(grid, x, y, dir))
+				if (CheckXMASFromPoint(grid, x, y, dir))
 					result++;
 			}
 
@@ -94,7 +101,35 @@ int CountXMAS(std::vector<std::string>* grid)
 	return result;
 }
 
-bool CheckFromPoint(std::vector<std::string>* grid, int x, int y, Direction dir)
+int CountCrossMAS(std::vector<std::string>* grid)
+{
+	int result = 0;
+
+	//Loop through all the rows
+	for (int y = 0; y < grid->size(); y++)
+	{
+		while (true)	//Loop until we have checked all "A"s on the line
+		{
+			//Find the position of the first "X" in the row
+			int x = grid->at(y).find("A");
+
+			//If no "A", we're finished with the row
+			if (x == std::string::npos)
+				break;
+
+			//Check if this A is at the centre of a CrossMAS
+			if (CheckCrossFromPoint(grid, x, y))
+				result++;
+
+			//Remove this "A" from the grid, as we no longer need it
+			(*grid)[y][x] = '.';
+		}
+	}
+
+	return result;
+}
+
+bool CheckXMASFromPoint(std::vector<std::string>* grid, int x, int y, Direction dir)
 {
 	int moveX = 0;
 	int moveY = 0;
@@ -149,5 +184,32 @@ bool CheckFromPoint(std::vector<std::string>* grid, int x, int y, Direction dir)
 	}
 
 	//All checked characters were the expected value, we found a "XMAS"
+	return true;
+}
+
+bool CheckCrossFromPoint(std::vector<std::string>* grid, int x, int y)
+{
+	std::string line1 = "...";
+	std::string line2 = "...";
+
+	//Build the first string from top-left to bottom-right
+	line1[0] = ((*grid)[y - 1][x - 1]);
+	line1[1] = ((*grid)[y][x]);
+	line1[2] = ((*grid)[y + 1][x + 1]);
+
+	//Build the second line from bottom-left to top-right
+	line2[0] = ((*grid)[y + 1][x - 1]);
+	line2[1] = ((*grid)[y][x]);
+	line2[2] = ((*grid)[y - 1][x + 1]);
+
+	//Check that line 1 spells "MAS"
+	if (line1 != "MAS" && line1 != "SAM")
+		return false;
+
+	//Check that line 2 spells MAS
+	if (line2 != "MAS" && line2 != "SAM")
+		return false;
+
+	//Both lines spell MAs, this is a CrossMAS
 	return true;
 }

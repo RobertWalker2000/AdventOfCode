@@ -65,7 +65,7 @@ int main()
 	int crossMas = CountCrossMAS(&grid);
 
 	std::cout << "XMAS found: " << xmas << std::endl;
-	std::cout << "CorssMAS found: " << crossMas << std::endl;
+	std::cout << "CrossMAS found: " << crossMas << std::endl;
 	exit(0);
 }
 

@@ -6,6 +6,8 @@
 #include <set>
 
 bool IsValid(std::vector<int>* update, std::multimap<int, int>* rules);
+void FixOrder(std::vector<int>* update, std::multimap<int, int>* rules);
+int FindPositionToInsert(std::vector<int>* pages, std::vector<int>* rules);
 int GetMiddleValue(std::vector<int>* update);
 std::vector<int> GetRulesAsVector(std::multimap<int, int>* rules, int key);
 
@@ -74,14 +76,23 @@ int main()
 	}
 
 	//Check all the values and sum up the appropriate middle values
-	int midValues = 0;
+	int validValues = 0;
+	int invalidValues = 0;
 	for (int i = 0; i < updates.size(); i++)
 	{
 		if (IsValid(&updates[i], &rules))
-			midValues += GetMiddleValue(&updates[i]);
+		{
+			validValues += GetMiddleValue(&updates[i]);
+			continue;
+		}
+
+		//List was out of order. Fix it, then note its value
+		FixOrder(&updates[i], &rules);
+		invalidValues += GetMiddleValue(&updates[i]);
 	}
 
-	std::cout << "Sum of valid middle values: " << midValues << std::endl;
+	std::cout << "Sum of valid middle values: " << validValues << std::endl;
+	std::cout << "Sum of invalid middle values: " << invalidValues << std::endl;
 	exit(0);
 }
 
@@ -113,6 +124,82 @@ bool IsValid(std::vector<int>* update, std::multimap<int, int>* rules)
 
 	//We checked all pages and they all passed the rules checks. Update is valid
 	return true;
+}
+
+void FixOrder(std::vector<int>* update, std::multimap<int, int>* rules)
+{
+	std::vector<int> pagesToAdd = *update;
+	std::vector<int> sortedPages;
+
+	while(!pagesToAdd.empty())
+	{
+		//Read the first value of the pagesToAdd list, and then remove it from the vector
+		int newPage = pagesToAdd.at(0);
+		pagesToAdd.erase(pagesToAdd.begin());
+
+		//Get the rules in vector form
+		std::vector<int> vecRules = GetRulesAsVector(rules, newPage);
+
+		int newPagePos = FindPositionToInsert(&sortedPages, &vecRules);
+
+		//If the new page goes at the end of the list, simply add it and move on. All rules will still be followed.
+		if (newPagePos == sortedPages.size())
+		{
+			sortedPages.push_back(newPage);
+			continue;
+		}
+
+		//If the page we are adding goes in the beginning/middle of the list, we have an extra problem
+		//We need to loop through every element in the list that is placed later than the new element
+		//Any of these elements which have a rule to be placed *before* the new element must be repositioned
+		//This is done by removing them from the sorted list, and adding them back into the "pagesToAdd" list
+
+		//Add the new page to the sorted list in the appropriate place
+		sortedPages.insert(sortedPages.begin() + newPagePos, newPage);
+
+		//Loop through all elements in the list that come after the newPage
+		//Start at the back of the list, as this means later pages are added back in earlier
+		//Also means when we erase an element, we odn't need to worry about the iterator as it would only affect things "behind" us as we iterate through
+		for (std::vector<int>::iterator it = sortedPages.end() - 1; it != sortedPages.begin() + newPagePos;)
+		{
+			//Make a copy of the current iterator, then decrement it
+			// This is done because we might delete the item we are working on. If that is the last item in the vector, we can not decrement afterwards
+			std::vector<int>::iterator pageToCheck = it;
+			it--;
+
+			//Check the rules for the current page against the newPage
+			vecRules = GetRulesAsVector(rules, *pageToCheck);
+
+			//Loop through all the rules to see if any of them are the "newPage"
+			for (int i = 0; i < vecRules.size(); i++)
+			{
+				//If we found a match, add the current page back into the "To Add" list and remove it from the sorted list. Move on to the next element.
+				if (vecRules.at(i) == newPage)
+				{
+					pagesToAdd.push_back(*pageToCheck);
+					sortedPages.erase(pageToCheck);
+					break;
+				}
+			}
+		}
+	}
+
+	*update = sortedPages;
+}
+
+//Calculates the latest position in the list that an item could be inserted without breaking the rules
+int FindPositionToInsert(std::vector<int>* pages, std::vector<int>* rules)
+{
+	for (int i = 0; i < pages->size(); i++)
+	{
+		for (int j = 0; j < rules->size(); j++)
+		{
+			if (pages->at(i) == rules->at(j))
+				return i;
+		}
+	}
+
+	return pages->size();
 }
 
 //Returns a vector containing all elements in the set which match to the given key

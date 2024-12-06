@@ -179,15 +179,6 @@ bool DoesMapLoop(std::vector<std::string>* map, Coords pos)
 	//Keep looping until we leave the map
 	while (IsPosInBounds(pos, map))
 	{
-		//Create a DirCoords that represents the current position and direction
-		Coords dir(moveX, moveY);
-		DirCoords dc;
-		dc.first = pos;
-		dc.second = dir;
-
-		//Try inserting this DirCoords into the set. If it already exists, we are in a loop
-		if (!stepsTaken.insert(dc).second)
-			return true;
 
 		//Calculate the position form after we take a step
 		Coords nextPos(pos.first + moveX, pos.second + moveY);
@@ -197,6 +188,17 @@ bool DoesMapLoop(std::vector<std::string>* map, Coords pos)
 		//If we are about to hit an abstacle, turn right
 		if (map->at(nextPos.second).at(nextPos.first) == obstacle)
 		{
+			//Create a DirCoords that represents the current position and direction
+			//Used to store the DirCoords every loop. Only storing collisions retains the loop-finidng ability, while drastically reducing execution time
+			Coords dir(moveX, moveY);
+			DirCoords dc;
+			dc.first = pos;
+			dc.second = dir;
+
+			//Try inserting this DirCoords into the set. If it already exists, we are in a loop
+			if (!stepsTaken.insert(dc).second)
+				return true;
+
 			TurnRight(&moveX, &moveY);
 			continue;	//Go back to loop again in case we need to do multiple turns, or we are about to exit the map now
 		}

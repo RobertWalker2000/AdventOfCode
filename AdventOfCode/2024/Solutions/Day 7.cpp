@@ -3,10 +3,11 @@
 #include <string>
 #include <vector>
 
-uint64_t Evaluate(std::string equation);
-bool TrySolve(std::vector<uint64_t> values, const uint64_t target);
-bool TryAdd(std::vector<uint64_t> values, const uint64_t target);
-bool TryMultiply(std::vector<uint64_t> values, const uint64_t target);
+uint64_t Evaluate(std::string equation, bool canConcatenate);
+bool TrySolve(std::vector<uint64_t> values, const uint64_t target, bool canConcatenate);
+bool TryAdd(std::vector<uint64_t> values, const uint64_t target, bool canConcatenate);
+bool TryMultiply(std::vector<uint64_t> values, const uint64_t target, bool canConcatenate);
+bool TryConcatenate(std::vector<uint64_t> values, const uint64_t target, bool canConcatenate);
 
 int main()
 {
@@ -40,22 +41,37 @@ int main()
 		lines.push_back(line);
 	}
 
-	uint64_t total = 0;
+	uint64_t nonConcatTotal = 0;
+	uint64_t concatTotal = 0;
 	for (int i = 0; i < lines.size(); i++)
-		total += Evaluate(lines[i]);
+	{
+		uint64_t value = Evaluate(lines[i], false);
 
-	std::cout << "Sum of all valid equations: " << total << std::endl;
+		//If we got a value without concatenating, no need to check with concats
+		if (value != 0)
+		{
+			nonConcatTotal += value;
+			concatTotal += value;
+			continue;
+		}
+
+		//If we didn't find a value without concatenating, try again with concats
+		concatTotal += Evaluate(lines[i], true);
+	}
+
+	std::cout << "Sum of all valid equations (No concats): " << nonConcatTotal << std::endl;
+	std::cout << "Sum of all valid equations (With concats): " << concatTotal << std::endl;
 	exit(0);
 }
 
-uint64_t Evaluate(std::string equation)
+uint64_t Evaluate(std::string equation, bool canConcatenate)
 {
 	//Find the first number, which is the calibration value. Store it as an int and remove it form the string
 	int colon = equation.find(':');
 	if (colon == std::string::npos)
 		return 0;
 	
-	uint64_t target = std::stoll(equation.substr(0, colon));
+	uint64_t target = std::stoull(equation.substr(0, colon));
 	equation.erase(0, colon + 2);	//Remove the calibration value, the colon, and the space
 
 	//Add a space to the end of the string to normalise the formatting (all numbers are followed by a space)
@@ -74,16 +90,18 @@ uint64_t Evaluate(std::string equation)
 		equation.erase(0, space + 1);
 	}
 
-	if (TrySolve(values, target))
+	//The max value is greater than the target, equation may still be solvable in some way
+	if (TrySolve(values, target, canConcatenate))
 		return target;
 
+	//Equation was unsolvable
 	return 0;
 }
 
-bool TrySolve(std::vector<uint64_t> values, const uint64_t target)
+bool TrySolve(std::vector<uint64_t> values, const uint64_t target, bool canConcatenate)
 {
 	//If we only have 1 value left, and it is equal to the target, we have solved the equation
-	//If that one value is not euqal to the target, the equation is unsolved
+	//If that one value is not equal to the target, the equation is unsolved
 	if (values.size() == 1)
 	{
 		if (values[0] == target)
@@ -92,15 +110,26 @@ bool TrySolve(std::vector<uint64_t> values, const uint64_t target)
 			return false;
 	}
 
-	//If we have more than 1 value, try the 2 ways to combine the next 2 numbers
-	//We only need there to be at least 1 possible solution, so if we find it on the first method, no need to perform the second method
-	if (TryAdd(values, target))
+	//If we have multiple values, but the first value is greater than the target, the equation is impossible
+	if (values[0] > target)
+		return false;
+
+	//As we only need at least 1 possible way to solve the equation, we can return on the first one that returns true, no need to check others afterwards
+	//If we can concatenate, try it first. Allows us to keep the same control flow for the other 2 methods afterwards
+	if (canConcatenate)
+	{
+		if (TryConcatenate(values, target, canConcatenate))
+			return true;
+	}
+
+	//Test the equation by adding the first 2 values
+	if (TryAdd(values, target, canConcatenate))
 		return true;
 
-	return TryMultiply(values, target);
+	return TryMultiply(values, target, canConcatenate);
 }
 
-bool TryAdd(std::vector<uint64_t> values, const uint64_t target)
+bool TryAdd(std::vector<uint64_t> values, const uint64_t target, bool canConcatenate)
 {
 	//Check that we have multiple values to work with
 	if (values.size() < 2)
@@ -115,10 +144,10 @@ bool TryAdd(std::vector<uint64_t> values, const uint64_t target)
 	values[0] = sum;
 	
 	//Take the new list of values, and check if the equation is solveable
-	return TrySolve(values, target);
+	return TrySolve(values, target, canConcatenate);
 }
 
-bool TryMultiply(std::vector<uint64_t> values, const uint64_t target)
+bool TryMultiply(std::vector<uint64_t> values, const uint64_t target, bool canConcatenate)
 {
 	//Check that we have multiple values to work with
 	if (values.size() < 2)
@@ -133,5 +162,38 @@ bool TryMultiply(std::vector<uint64_t> values, const uint64_t target)
 	values[0] = product;
 
 	//Take the new list of values, and check if the equation is solveable
-	return TrySolve(values, target);
+	return TrySolve(values, target, canConcatenate);
+}
+
+bool TryConcatenate(std::vector<uint64_t> values, const uint64_t target, bool canConcatenate)
+{
+	//Check that this value was allowed to be called, in case it was done by mistake
+	if (!canConcatenate)
+	{
+		std::cout << "ERROR: TryConcatenate was called with value \"canConcatenate = false\"" << std::endl;
+		return false;
+	}
+
+	//Check that we have multiple values to work with
+	if (values.size() < 2)
+	{
+		std::cout << "ERROR: TryConcatenate was called with insufficient values to operate on" << std::endl;
+		return false;
+	}
+
+	//Convert the numbers to strings, which makes them easy to concatenate
+	std::string v1 = std::to_string(values[0]);
+	std::string v2 = std::to_string(values[1]);
+
+	//Concatenate the values, and convert the result back to a number
+	std::string combined(v1);
+	combined.append(v2);
+	uint64_t result = std::stoull(combined);
+
+	//Replace the first 2 values with the concatenated value
+	values.erase(values.begin());
+	values[0] = result;
+
+	//Take the new list of values, and check if the equation is solveable
+	return TrySolve(values, target, canConcatenate);
 }

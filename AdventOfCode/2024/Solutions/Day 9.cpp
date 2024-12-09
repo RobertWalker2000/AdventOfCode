@@ -2,8 +2,10 @@
 #include <fstream>
 #include <string>
 #include <vector>
+#include <map>
 
 uint64_t CalculateDefragmentedChecksum(std::ifstream* input);
+uint64_t CalculateBlockDefragmentedChecksum(std::ifstream* input);
 uint64_t CalculateChecksumOfStreak(int ID, int count, int pos);
 
 int main()
@@ -27,7 +29,11 @@ int main()
 
 	uint64_t checksum = CalculateDefragmentedChecksum(&input);
 
+	input.seekg(input.beg);
+	uint64_t smartChecksum = CalculateBlockDefragmentedChecksum(&input);
+
 	std::cout << "Checksum of defragmented data: " << checksum << std::endl;
+	std::cout << "Checksum of block defragmented data: " << smartChecksum << std::endl;
 
 	exit(0);
 }
@@ -122,6 +128,95 @@ uint64_t CalculateDefragmentedChecksum(std::ifstream* input)
 
 	//If we have any leftover data chunk at the back, process it now
 	checksum += CalculateChecksumOfStreak(backDataChunk.first, backDataChunk.second, pos);
+
+	return checksum;
+}
+
+//Assumes there are no *data* chunks with size 0
+uint64_t CalculateBlockDefragmentedChecksum(std::ifstream* input)
+{
+	using DataChunk = std::pair<int, int>;
+	std::multimap<int, int> gaps;	//Map of <size, pos>
+	std::vector<std::pair<DataChunk, int>>  dataChunks;	//Vector of <DataChunk(ID, size), pos>
+
+	int ID = 0;
+	int pos = 0;
+	while (!input->eof())
+	{
+		//read in the data chunk
+		char nextChar = input->get();
+		if (nextChar == '\n')
+			break;
+
+		//Store the chunk in the vector
+		int chunkLen = nextChar - '0';
+		DataChunk chunk(ID, chunkLen);
+		dataChunks.push_back(std::pair<DataChunk, int>(chunk, pos));
+		pos += chunkLen;
+		ID++;
+
+		//Read in the gap
+		nextChar = input->get();
+		if (nextChar == '\n')
+			break;
+
+		//Store the gap in the map
+		chunkLen = nextChar - '0';
+
+		if (chunkLen == 0)	//Don't need to process gaps of size 0
+			continue;
+
+		gaps.insert(std::pair<int, int>(chunkLen, pos));
+		pos += chunkLen;
+	}
+
+	//Now that we know the size and positions (and IDs) of all the gaps and data chunks, start working backwards to try ad fit the data chunks into the gaps
+	for (int i = dataChunks.size() - 1; i >= 0; i--)
+	{
+		//Get the length of the data chunk
+		int chunkLen = dataChunks[i].first.second;
+
+		//Get the smallest available gap that can fit the chunk
+		auto gapToCheck = gaps.lower_bound(chunkLen);
+
+		//If there was no gap, leave the chunk alone and go to the next one
+		if (gapToCheck == gaps.end())
+			continue;
+
+		//Find the earliest possible gap that can fit the data chunk
+		auto gapToFill = gapToCheck;
+		while (gapToCheck != gaps.end())
+		{
+			if (gapToCheck->second < gapToFill->second)
+				gapToFill = gapToCheck;
+
+			gapToCheck++;
+		}
+
+		//Ensure the gap occurs *before* the data chunk, otherwise it doesn't move
+		if (gapToFill->second > dataChunks[i].second)
+			continue;
+
+		//We found an appropriate gap, move the chunk into it
+		dataChunks[i].second = gapToFill->second;
+
+		//Make a gap representing the leftover gap after inserting the data chunk
+		std::pair<int, int> newGap = *gapToFill;
+		newGap.first -= chunkLen;
+		newGap.second += chunkLen;
+
+		//Delete the old gap from the map
+		gaps.erase(gapToFill);
+
+		//If the new gap is larger than 0, add it to the map
+		if (newGap.first > 0)
+			gaps.insert(newGap);
+	}
+
+	//Now that we have rearranged all the data chunks, we should calculate the checksum
+	uint64_t checksum = 0;
+	for (int i = 0; i < dataChunks.size(); i++)
+		checksum += CalculateChecksumOfStreak(dataChunks[i].first.first, dataChunks[i].first.second, dataChunks[i].second);
 
 	return checksum;
 }
